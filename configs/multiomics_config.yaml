@@ -1,0 +1,19 @@
+# Configuración de Análisis Multi-ómico (Genómica & Transcriptómica)
+multiomics:
+  transcriptomics:
+    min_counts_per_gene: 10
+    min_genes_per_sample: 200
+    normalization_method: "CPM_log1p" # 'CPM_log1p', 'TPM', 'DESeq2_VST'
+    top_variable_genes: 2000
+
+  differential_expression:
+    pval_threshold: 0.05
+    log2fc_threshold: 1.0
+    method: "wilcoxon" # 'wilcoxon', 't-test', 'DESeq2'
+
+  pathway_enrichment:
+    gene_sets:
+      - "KEGG_2021_Human"
+      - "Reactome_2022"
+      - "GO_Biological_Process_2023"
+    cutoff: 0.05

@@ -1,0 +1,18 @@
+# Configuración de Patología Digital y WSI
+pathology:
+  wsi:
+    target_magnification: 20x
+    patch_size: 256
+    stride: 256
+    overlap: 0
+    tissue_threshold: 0.15 # Umbral de tejido en parche (filtro de fondo blanco)
+
+  feature_extraction:
+    backbone: "conch" # 'conch', 'uni', 'plip', 'resnet50'
+    pretrained: true
+    batch_size: 64
+    embedding_dim: 512
+
+  graph:
+    k_neighbors: 8
+    distance_threshold_microns: 150

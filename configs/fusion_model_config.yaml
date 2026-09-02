@@ -1,0 +1,21 @@
+# Configuración del Modelo de Fusión Multimodal e IA Explicable (XAI)
+model:
+  architecture: "MultimodalAttentionFusion"
+  omics_input_dim: 2000
+  vision_input_dim: 512
+  hidden_dim: 256
+  latent_dim: 128
+  num_classes: 2 # 0: DCIS indolente / estable, 1: CDIS progresivo a carcinoma invasivo
+  dropout: 0.3
+
+training:
+  epochs: 100
+  learning_rate: 0.0001
+  weight_decay: 0.0005
+  batch_size: 16
+  early_stopping_patience: 15
+
+xai:
+  method: "shap_and_cross_attention"
+  num_top_features: 50
+  save_attention_maps: true

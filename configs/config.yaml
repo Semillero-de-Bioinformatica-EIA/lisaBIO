@@ -1,0 +1,19 @@
+# Configuración Global del Proyecto
+project_name: "dcis_progression_biomarkers"
+version: "0.1.0"
+seed: 42
+device: "cuda" # 'cuda' o 'cpu'
+
+paths:
+  data_dir: "data"
+  raw_dir: "data/raw"
+  interim_dir: "data/interim"
+  processed_dir: "data/processed"
+  external_dir: "data/external"
+  results_dir: "data/results"
+  biomarkers_dir: "data/results/biomarkers"
+  figures_dir: "data/results/figures"
+
+logging:
+  level: "INFO"
+  log_file: "data/results/pipeline.log"
