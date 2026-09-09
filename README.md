@@ -6,8 +6,6 @@ version v3
 
 Plataforma de investigación reproducible para la identificación de biomarcadores moleculares y morfológicos asociados con la progresión de Carcinoma Ductal In Situ (CDIS) a carcinoma invasivo.
 
-## Advertencia Científica
-Esta es una plataforma de **investigación** en desarrollo. Ningún modelo, métrica o biomarcador generado por esta herramienta ha sido validado clínicamente. No utilizar para la toma de decisiones clínicas.
 
 ## Características
 - Integración de Whole Slide Images (WSI) y datos Multi-ómicos (Transcriptómica, CNA, Mutaciones, Clínica).
@@ -30,36 +28,59 @@ pip install -e .
 pip install -e ".[dev]"
 ```
 
-## Uso
+| Verificación         | Resultado                             |
+| -------------------- | ------------------------------------- |
+| Compilación Python   | Correcta                              |
+| Instalación editable | Correcta                              |
+| Pruebas              | Fallan                                |
+| Black                | Falla: 240 archivos requieren formato |
+| Ruff                 | La ejecución de CI no queda limpia    |
+| CI de GitHub         | Fallaría por formato y pruebas        |
 
-El pipeline completo se gestiona a través de una CLI central.
 
-### 1. Pruebas Técnicas
-Puedes verificar la instalación con datos sintéticos:
-```bash
-pytest tests/ -v
-python -m dcis_biomarkers.pipeline validate-manifest --synthetic
-```
 
-### 2. Ejecución Real
-La configuración del pipeline se define en `configs/config.yaml`.
-
-```bash
-# Validar contrato de datos
-python -m dcis_biomarkers.pipeline validate-manifest --config configs/config.yaml
-
-# Entrenar el modelo
-python -m dcis_biomarkers.pipeline train --config configs/config.yaml
-
-# Generar reporte de biomarcadores
-python -m dcis_biomarkers.pipeline export-biomarkers --config configs/config.yaml
-```
-
-## Estructura
-- `src/dcis_biomarkers/`: Paquete principal.
-  - `data/`: Contratos de datos, manifiestos y partición.
-  - `models/`: Encoders, MIL y redes de fusión.
-  - `multiomics/`: Adaptadores modulares por ómica.
-  - `pathology/`: Procesamiento WSI, segmentación y tiling.
-  - `xai/`: Explicabilidad de parches y SHAP tabular.
-  - `evaluation/`: Métricas de clasificación, supervivencia y calibración.
+## Área
+Estado actual
+Evaluación
+Organización del repositorio
+Mejorada
+Buena separación de módulos
+Configuración
+Parcialmente correcta
+Falta validación completa de campos
+Manifiestos
+Implementados
+Requieren más validaciones y conexión al pipeline
+Prevención de fuga
+Implementada parcialmente
+La división por paciente es correcta, pero debe integrarse al entrenamiento
+Multi-ómica
+Arquitectura inicial
+Adaptadores presentes, pipeline de entrenamiento ausente
+TIFF/WSI
+Parcial
+Reader inicial, tiling y metadatos aún incompletos
+H&E
+Parcial
+Segmentación presente, Macenko pendiente
+MIL
+Defectuoso
+Falla la normalización de atención
+Fusión multimodal
+Defectuosa
+Error de dimensiones
+XAI
+Mejorada
+Ya no fabrica valores, pero SHAP es demasiado genérico
+CLI
+Incompleto
+La mayoría de comandos terminan en pass
+Tests
+Insuficientes
+Hay pruebas nuevas, pero dos fallan
+CI
+Configurado
+Actualmente fallaría por formato y tests
+Reproducibilidad
+Parcial
+Semillas y config presentes, entrenamiento no conectado
