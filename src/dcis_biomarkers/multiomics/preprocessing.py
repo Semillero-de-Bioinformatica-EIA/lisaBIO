@@ -1,35 +1,43 @@
-import numpy as np
 import pandas as pd
-from typing import Tuple
+import numpy as np
+from typing import Dict, Any
+
+from .adapters.base import ModalityAdapter
+from .adapters.transcriptomics import TranscriptomicsAdapter
+from .adapters.clinical import ClinicalAdapter
 
 class OmicsPreprocessor:
-    """Clase para filtrado, normalización y transformación de matrices transcriptómicas y genómicas."""
+    """
+    Gestor de preprocesamiento para múltiples modalidades ómicas.
+    Coordina los adaptadores de cada modalidad y previene fuga de datos.
+    """
+    def __init__(self, adapters: Dict[str, ModalityAdapter]):
+        self.adapters = adapters
+        self.is_fitted = False
 
-    def __init__(self, min_counts: int = 10, min_genes: int = 200, log_transform: bool = True):
-        self.min_counts = min_counts
-        self.min_genes = min_genes
-        self.log_transform = log_transform
+    def fit(self, data_dict: Dict[str, pd.DataFrame]) -> 'OmicsPreprocessor':
+        """
+        Ajusta todos los adaptadores usando SOLO datos de entrenamiento.
+        data_dict: { "transcriptomics": df_rna, "clinical": df_clin, ... }
+        """
+        for mod, df in data_dict.items():
+            if mod in self.adapters:
+                self.adapters[mod].fit(df)
+        self.is_fitted = True
+        return self
 
-    def filter_low_expression(self, df_counts: pd.DataFrame) -> pd.DataFrame:
-        """Filtra genes con conteos bajos y muestras con pocos genes expresados."""
-        # Filtrar muestras (filas)
-        valid_samples = (df_counts > 0).sum(axis=1) >= self.min_genes
-        filtered_df = df_counts.loc[valid_samples]
+    def transform(self, data_dict: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
+        """
+        Transforma los datos usando los parámetros aprendidos en fit().
+        """
+        if not self.is_fitted:
+            raise RuntimeError("Debe llamar a fit() antes de transform()")
+            
+        out_dict = {}
+        for mod, df in data_dict.items():
+            if mod in self.adapters:
+                out_dict[mod] = self.adapters[mod].transform(df)
+        return out_dict
 
-        # Filtrar genes (columnas)
-        valid_genes = filtered_df.sum(axis=0) >= self.min_counts
-        return filtered_df.loc[:, valid_genes]
-
-    def normalize_cpm(self, df_counts: pd.DataFrame) -> pd.DataFrame:
-        """Calcula Counts Per Million (CPM) y aplica transformación log1p."""
-        lib_sizes = df_counts.sum(axis=1)
-        cpm = df_counts.div(lib_sizes, axis=0) * 1e6
-        if self.log_transform:
-            return np.log1p(cpm)
-        return cpm
-
-    def fit_transform(self, df_counts: pd.DataFrame) -> pd.DataFrame:
-        """Pipeline completo de filtrado y normalización."""
-        filtered = self.filter_low_expression(df_counts)
-        normalized = self.normalize_cpm(filtered)
-        return normalized
+    def fit_transform(self, data_dict: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
+        return self.fit(data_dict).transform(data_dict)

@@ -1,39 +1,23 @@
-#!/usr/bin/env python
 """
-Script 01: Preprocesamiento de datos multi-ómicos (Genómica, Transcriptómica y Datos Clínicos).
+Script 01: Preprocesamiento e Integración Multimodal de Datos.
+Wrapper de la fase de preprocesamiento del pipeline unificado.
 """
 
-import argparse
 import sys
+import subprocess
 from pathlib import Path
 
-# Permitir importación del paquete src
-sys.path.append(str(Path(__file__).resolve().parent.parent / "src"))
-
-from dcis_biomarkers.utils import setup_logger, load_config
-from dcis_biomarkers.multiomics import OmicsPreprocessor
-
 def main():
-    parser = argparse.ArgumentParser(description="Preprocesamiento Multi-ómico para Progresión de CDIS")
-    parser.add_argument("--config", type=str, default="configs/multiomics_config.yaml", help="Ruta al archivo YAML de configuración")
-    args = parser.parse_args()
-
-    logger = setup_logger("01_preprocess_data")
-    logger.info("Iniciando fase 01: Preprocesamiento de Datos Multi-ómicos...")
-
+    print("=== INICIANDO PREPROCESAMIENTO Y VERIFICACION MULTIMODAL ===")
+    # Ejecuta el pipeline validando los manifiestos, lo que también verifica
+    # que los datos existan y tengan el formato correcto según el config.
+    cmd = [sys.executable, "-m", "dcis_biomarkers.pipeline", "validate-manifest", "--config", "configs/config.yaml"]
+    
     try:
-        config = load_config(args.config)
-        logger.info(f"Configuración cargada correctamente desde {args.config}")
-        
-        preprocessor = OmicsPreprocessor(
-            min_counts=config['multiomics']['transcriptomics']['min_counts_per_gene'],
-            min_genes=config['multiomics']['transcriptomics']['min_genes_per_sample']
-        )
-        logger.info("Módulo de preprocesamiento instanciado. Listo para cargar matrices RNA-seq.")
-        logger.info("Fase 01 completada exitosamente.")
-
-    except Exception as e:
-        logger.error(f"Error durante el preprocesamiento: {e}")
+        subprocess.run(cmd, check=True)
+        print("\n=== PREPROCESAMIENTO COMPLETADO CON ÉXITO ===")
+    except subprocess.CalledProcessError as e:
+        print(f"\n[FATAL] El preprocesamiento falló con código {e.returncode}")
         sys.exit(1)
 
 if __name__ == "__main__":

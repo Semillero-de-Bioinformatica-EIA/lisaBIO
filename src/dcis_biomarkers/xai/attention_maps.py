@@ -1,23 +1,30 @@
-import numpy as np
-from typing import List, Tuple, Dict, Any
+from typing import Dict, Any, List
+import pandas as pd
+from pathlib import Path
 
-def extract_wsi_attention_heatmap(coordinates: List[Tuple[int, int]], attention_weights: np.ndarray, patch_size: int = 256) -> Dict[str, Any]:
+def generate_attention_maps(attention_weights: List[float], metadata: Dict[str, Any], output_path: str | Path):
     """
-    Mapea las ponderaciones de atención generadas por el modelo de IA hacia las coordenadas
-    originales de la imagen de lámina completa (WSI) para visualizar regiones tisulares críticas.
+    Genera y guarda mapas de atención de regiones WSI con metadatos completos.
+    
+    metadata debe incluir: patient_id, slide_id, coordinates, level, physical_size, checksum, model_version
     """
-    heatmap_records = []
-    norm_weights = (attention_weights - np.min(attention_weights)) / (np.max(attention_weights) - np.min(attention_weights) + 1e-8)
-
-    for (x, y), weight in zip(coordinates, norm_weights):
-        heatmap_records.append({
-            'x': x,
-            'y': y,
-            'patch_size': patch_size,
-            'attention_score': float(weight)
-        })
-
-    return {
-        "num_patches": len(coordinates),
-        "heatmap": heatmap_records
-    }
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # En lugar de generar imágenes directamente (lo cual depende de CV2/PIL complejo aquí),
+    # guardamos un reporte detallado que puede ser renderizado posteriormente por un script de UI.
+    
+    df = pd.DataFrame({
+        "roi_index": range(len(attention_weights)),
+        "attention_score": attention_weights
+    })
+    
+    # Adjuntamos metadata como un archivo JSON separado o integrarlo en la base de datos de atención.
+    import json
+    meta_path = output_path.with_suffix(".meta.json")
+    with open(meta_path, "w") as f:
+        json.dump(metadata, f, indent=4)
+        
+    df.to_csv(output_path, index=False)
+    
+    return str(output_path)

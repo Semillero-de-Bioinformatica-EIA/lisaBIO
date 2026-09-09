@@ -1,15 +1,14 @@
-from .omics_encoder import OmicsEncoder
-from .vision_encoder import WSIBagEncoder
+from .encoders import GenericOmicsEncoder, ClinicalEncoder
+from .vision_encoder import VisionEncoder
 from .multimodal_fusion import MultimodalFusionNetwork
-from .survival_classifier import SurvivalHazardPredictor
-from .cnn_rnn_monai import MONAIPathologyCNNRNNModel, get_monai_pathology_transforms
+from .mil import GatedAttentionMIL
+from .baselines import BaselineModels
 
 __all__ = [
-    "OmicsEncoder",
-    "WSIBagEncoder",
+    "GenericOmicsEncoder",
+    "ClinicalEncoder",
+    "VisionEncoder",
     "MultimodalFusionNetwork",
-    "SurvivalHazardPredictor",
-    "MONAIPathologyCNNRNNModel",
-    "get_monai_pathology_transforms"
+    "GatedAttentionMIL",
+    "BaselineModels"
 ]
-

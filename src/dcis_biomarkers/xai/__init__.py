@@ -1,7 +1,7 @@
-from .shap_analysis import compute_omics_shap_values
-from .attention_maps import extract_wsi_attention_heatmap
+from .shap_analysis import perform_shap_analysis
+from .attention_maps import generate_attention_maps
 
 __all__ = [
-    "compute_omics_shap_values",
-    "extract_wsi_attention_heatmap"
+    "perform_shap_analysis",
+    "generate_attention_maps"
 ]

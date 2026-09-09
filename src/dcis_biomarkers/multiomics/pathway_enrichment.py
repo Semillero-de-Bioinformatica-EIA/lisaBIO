@@ -1,30 +1,36 @@
-from typing import List, Dict, Any
 import pandas as pd
+from typing import List, Dict, Any
 
-def run_pathway_enrichment(gene_list: List[str], gene_sets: List[str] = None) -> pd.DataFrame:
+try:
+    import gseapy as gp
+    HAS_GSEAPY = True
+except ImportError:
+    HAS_GSEAPY = False
+
+def run_enrichment(gene_list: List[str], gene_sets: str = 'KEGG_2021_Human') -> pd.DataFrame:
     """
-    Ejecuta análisis de enriquecimiento de rutas metabólicas/biológicas (GSEA / Enrichr)
-    para la lista de genes biomarcadores sobreexpresados en progresión de CDIS.
+    Ejecuta Pathway Enrichment Analysis (ORA) para una lista de genes.
     """
-    if gene_sets is None:
-        gene_sets = ['KEGG_2021_Human', 'Reactome_2022', 'GO_Biological_Process_2023']
+    if not HAS_GSEAPY:
+        raise ImportError("La librería gseapy no está instalada. Ejecute: pip install gseapy")
+        
+    if not gene_list:
+        return pd.DataFrame()
 
     try:
-        import gseapy as gp
         enr = gp.enrichr(
             gene_list=gene_list,
             gene_sets=gene_sets,
-            organism='human',
+            organism='Human',
             outdir=None
         )
-        return enr.results
-    except ImportError:
-        # Fallback estructurado si gseapy no está instalado aún
-        return pd.DataFrame({
-            'Gene_set': gene_sets,
-            'Term': ['Simulated Pathway'] * len(gene_sets),
-            'Overlap': ['5/50'] * len(gene_sets),
-            'P-value': [0.001] * len(gene_sets),
-            'Adjusted P-value': [0.01] * len(gene_sets),
-            'Genes': [';'.join(gene_list[:5])] * len(gene_sets)
-        })
+        if enr.results is not None:
+            return enr.results
+        else:
+            return pd.DataFrame()
+    except Exception as e:
+        # En lugar de fabricar resultados (0.001 p-values falsos), fallamos explícitamente
+        # o devolvemos un DataFrame vacío con error loggeado
+        import logging
+        logging.getLogger(__name__).error(f"Fallo en GSEApy enrichr: {e}")
+        raise RuntimeError(f"Error en el análisis de pathway enrichment: {e}")

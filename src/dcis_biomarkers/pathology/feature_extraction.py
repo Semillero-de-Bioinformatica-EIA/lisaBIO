@@ -1,37 +1,38 @@
 import torch
 import torch.nn as nn
-import numpy as np
-from typing import List
+from torchvision.models import resnet50, ResNet50_Weights
 
-class DeepFeatureExtractor:
+class FeatureExtractor:
     """
-    Extractor de vectores de características profundas para parches de H&E
-    utilizando encoders de visión o modelos de patología digital (ej. CONCH, ResNet).
+    Extracción de características usando un backbone pre-entrenado real.
+    Reemplaza la implementación dummy original que devolvía torch.randn.
     """
-
-    def __init__(self, backbone: str = "resnet50", embedding_dim: int = 512, device: str = "cpu"):
-        self.backbone = backbone
-        self.embedding_dim = embedding_dim
+    def __init__(self, backbone_name: str = "resnet50", device: str = "cpu"):
         self.device = device
-        self.model = self._load_model()
+        self.backbone_name = backbone_name
+        self.model = self._load_backbone()
+        self.model.to(self.device)
+        self.model.eval()
 
-    def _load_model(self) -> nn.Module:
-        """Carga el modelo preentrenado."""
-        # Capa dummy/simulada configurable
-        model = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
-            nn.Linear(3, self.embedding_dim) # Entrada dummy
-        )
-        model.to(self.device)
-        model.eval()
-        return model
+    def _load_backbone(self) -> nn.Module:
+        if self.backbone_name == "resnet50":
+            # Usar ResNet50 pre-entrenado en ImageNet
+            model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
+            # Eliminar la capa de clasificación (FC)
+            modules = list(model.children())[:-1]
+            return nn.Sequential(*modules)
+        elif self.backbone_name == "conch":
+            raise NotImplementedError("CONCH backbone requiere acceso a weights específicos y no está empaquetado por defecto.")
+        else:
+            raise ValueError(f"Backbone no soportado: {self.backbone_name}")
 
-    def extract_features(self, patches_tensor: torch.Tensor) -> np.ndarray:
-        """Extrae la matriz de vectores característicos (N_parches, embedding_dim)."""
-        with torch.no_grad():
-            patches_tensor = patches_tensor.to(self.device)
-            # Simulando salida de dimensión adecuada
-            num_patches = patches_tensor.shape[0]
-            embeddings = torch.randn(num_patches, self.embedding_dim).to(self.device)
-            return embeddings.cpu().numpy()
+    @torch.no_grad()
+    def extract(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        x: (B, C, H, W) normalizado según el backbone.
+        Retorna: (B, Feature_Dim)
+        """
+        x = x.to(self.device)
+        features = self.model(x)
+        features = features.view(features.size(0), -1) # Flatten (B, D, 1, 1) -> (B, D)
+        return features

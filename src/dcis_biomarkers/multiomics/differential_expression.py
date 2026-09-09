@@ -1,48 +1,63 @@
 import pandas as pd
 import numpy as np
-from scipy import stats
-from statsmodels.stats.multitest import multipletests
 
-def run_differential_expression(
-    expr_df: pd.DataFrame, 
-    group_labels: pd.Series, 
-    group_cases: str = "Invasive", 
-    group_controls: str = "DCIS_Indolent"
-) -> pd.DataFrame:
-    """
-    Ejecuta prueba de expresión diferencial (Wilcoxon rank-sum) entre muestras de CDIS progresivo/invasivo vs indolente.
-    Retorna p-values, p-adjusted (FDR) y log2 Fold Change (log2FC).
-    """
-    cases_mask = group_labels == group_cases
-    controls_mask = group_labels == group_controls
+try:
+    import statsmodels.api as sm
+    HAS_STATSMODELS = True
+except ImportError:
+    HAS_STATSMODELS = False
 
-    cases_data = expr_df.loc[cases_mask]
-    controls_data = expr_df.loc[controls_mask]
+def run_differential_expression(df_expr: pd.DataFrame, labels: pd.Series) -> pd.DataFrame:
+    """
+    Calcula la expresión diferencial simple.
+    df_expr: DataFrame de genes (pacientes x genes)
+    labels: Serie binaria (e.g., 0 = Indolent, 1 = Progressive) indexada por paciente.
+    """
+    if not HAS_STATSMODELS:
+        raise ImportError("La librería statsmodels no está instalada. Ejecute: pip install statsmodels")
+
+    common_idx = df_expr.index.intersection(labels.index)
+    X = df_expr.loc[common_idx]
+    y = labels.loc[common_idx]
 
     results = []
+    
+    # Asumiendo y contiene 0 y 1
+    group_0 = y == 0
+    group_1 = y == 1
 
-    for gene in expr_df.columns:
-        c_vals = cases_data[gene].values
-        ctrl_vals = controls_data[gene].values
+    if sum(group_0) == 0 or sum(group_1) == 0:
+        raise ValueError("No hay suficientes muestras en al menos uno de los grupos para DE.")
 
-        mean_case = np.mean(c_vals)
-        mean_ctrl = np.mean(ctrl_vals)
-        log2fc = mean_case - mean_ctrl  # Asumiendo datos log-transformados
-
+    for gene in X.columns:
+        expr = X[gene].values
+        
+        # Simple fold change (log2 fold change si expr ya está en log scale)
+        mean_0 = expr[group_0].mean()
+        mean_1 = expr[group_1].mean()
+        log2fc = mean_1 - mean_0
+        
+        # T-test asumiendo varianzas diferentes
         try:
-            stat, pval = stats.mannwhitneyu(c_vals, ctrl_vals, alternative='two-sided')
+            from scipy.stats import ttest_ind
+            t_stat, p_val = ttest_ind(expr[group_1], expr[group_0], equal_var=False)
         except Exception:
-            pval = 1.0
+            p_val = 1.0
 
         results.append({
-            'gene': gene,
-            'log2FC': log2fc,
-            'pval': pval,
-            'mean_case': mean_case,
-            'mean_control': mean_ctrl
+            "gene": gene,
+            "log2fc": log2fc,
+            "p_value": p_val
         })
 
-    res_df = pd.DataFrame(results)
-    _, padj, _, _ = multipletests(res_df['pval'].values, method='fdr_bh')
-    res_df['padj'] = padj
-    return res_df.sort_values('padj')
+    df_res = pd.DataFrame(results)
+    
+    # FDR Correction
+    from statsmodels.stats.multitest import multipletests
+    if not df_res.empty:
+        _, p_adj, _, _ = multipletests(df_res["p_value"].fillna(1.0), alpha=0.05, method='fdr_bh')
+        df_res["padj"] = p_adj
+    else:
+        df_res["padj"] = []
+
+    return df_res.sort_values("p_value")
