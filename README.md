@@ -28,7 +28,7 @@ pip install -e .
 pip install -e ".[dev]"
 ```
 
-| Verificación         | Resultado                             |
+|## Verificación         | ##Resultado                             |
 | -------------------- | ------------------------------------- |
 | Compilación Python   | Correcta                              |
 | Instalación editable | Correcta                              |
